@@ -1,0 +1,305 @@
+image: gitlab-registry.cern.ch/atlas-sit/docker/alma9-atlasos-dev:latest
+
+stages:
+  - build
+  - checks
+
+variables:
+  SOURCE_DIR: source
+  SOURCE_DIR_ABS: "${CI_PROJECT_DIR}/${SOURCE_DIR}"
+  BUILD_DIR: build
+  BUILD_DIR_ABS: "${CI_PROJECT_DIR}/${BUILD_DIR}"
+
+.setup_kerberos: &setup_kerberos
+  - date
+  - echo "${EOS_ACCOUNT_PASSWORD}" | kinit ${EOS_ACCOUNT_USERNAME}@CERN.CH
+  - klist
+  - cp ${CI_PROJECT_DIR}/.gitlab/ci_scripts/custom_krb5.conf /etc/krb5.conf
+  - cp ${CI_PROJECT_DIR}/.gitlab/ci_scripts/custom_ssh.conf /etc/ssh/ssh_config
+  - echo -e "Host svn.cern.ch lxplus.cern.ch\n\tUser ${EOS_ACCOUNT_USERNAME}\n\tStrictHostKeyChecking no\n\tGSSAPIAuthentication yes\n\tGSSAPIDelegateCredentials yes\n\tProtocol 2\n\tForwardX11 no\n\tIdentityFile ~/.ssh/id_rsa" >> ~/.ssh/config
+  - cat ~/.ssh/config
+  - date
+
+.prepare_dirs: &prepare_dirs
+  - mkdir ${JOBNAME}
+  - cd ${JOBNAME}
+  - set +e
+
+.compile_topcptoolkit: &compile_topcptoolkit
+  - set -e
+  - mkdir ${BUILD_DIR}
+  - cd ${BUILD_DIR}
+  - cmake ${SOURCE_DIR_ABS}
+  - make -j4
+  - source ./*/setup.sh
+  - set +e
+  - cd ../
+
+latestAArelease:
+  rules:
+    - when: always
+  stage: build
+  tags:
+    - cvmfs
+  variables:
+    JOBNAME: job_latestAArelease
+  script:
+    - *prepare_dirs
+    - source ${CI_PROJECT_DIR}/.gitlab/ci_scripts/setup_latest_AA_release.sh
+    - *setup_kerberos
+    - *compile_topcptoolkit
+    - echo "BUILD_PATH=${JOBNAME}/${BUILD_DIR}" >> build.env
+    - echo "ASETUP_PATH=${JOBNAME}" >> build.env
+  needs: []
+  artifacts:
+    paths:
+      - ${JOBNAME}
+    name: ${BUILD_DIR}_${CI_JOB_NAME}
+    expire_in: 2h
+    reports:
+      dotenv: ./${JOBNAME}/build.env
+
+referenceAATopCPToolkitTag:
+  rules:
+    - when: always
+  stage: build
+  tags:
+    - cvmfs
+  variables:
+    JOBNAME: job_referenceAATag
+  script:
+    - *prepare_dirs
+    - source ${CI_PROJECT_DIR}/.gitlab/ci_scripts/setup_latest_AA_release.sh
+    - source ${CI_PROJECT_DIR}/.gitlab/ci_scripts/setup_latest_TopCPToolkitTag.sh
+    - *setup_kerberos
+    - *compile_topcptoolkit
+    - echo "BUILD_PATH=${JOBNAME}/${BUILD_DIR}" >> build.env
+    - echo "ASETUP_PATH=${JOBNAME}" >> build.env
+  needs:
+    - job: latestAArelease
+      artifacts: false
+  artifacts:
+    paths:
+      - ${JOBNAME}
+    name: ${BUILD_DIR}_${CI_JOB_NAME}
+    expire_in: 2h
+    reports:
+      dotenv: ./${JOBNAME}/build.env
+
+lastweekAATopCPToolkitTag:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+  stage: build
+  tags:
+    - cvmfs
+  variables:
+    JOBNAME: job_lastweekAATag
+  script:
+    - *prepare_dirs
+    - source ${CI_PROJECT_DIR}/.gitlab/ci_scripts/setup_penultimate_AA_release.sh
+    - source ${CI_PROJECT_DIR}/.gitlab/ci_scripts/setup_latest_TopCPToolkitTag.sh
+    - *setup_kerberos
+    - *compile_topcptoolkit
+    - echo "BUILD_PATH=${JOBNAME}/${BUILD_DIR}" >> build.env
+    - echo "ASETUP_PATH=${JOBNAME}" >> build.env
+  needs:
+    - job: referenceAATopCPToolkitTag
+      artifacts: false
+  artifacts:
+    paths:
+      - ${JOBNAME}
+    name: ${BUILD_DIR}_${CI_JOB_NAME}
+    expire_in: 2h
+    reports:
+      dotenv: ./${JOBNAME}/build.env
+
+latestAAnightly:
+  rules:
+    - when: always
+  stage: build
+  tags:
+    - cvmfs
+  variables:
+    JOBNAME: job_latestAAnightly
+  script:
+    - *prepare_dirs
+    - source ${CI_PROJECT_DIR}/.gitlab/ci_scripts/setup_latest_AA_nightly.sh
+    - *setup_kerberos
+    - *compile_topcptoolkit
+    - echo "BUILD_PATH=${JOBNAME}/${BUILD_DIR}" >> build.env
+    - echo "ASETUP_PATH=${JOBNAME}" >> build.env
+  needs: []
+  artifacts:
+    paths:
+      - ${JOBNAME}
+    name: ${BUILD_DIR}_${CI_JOB_NAME}
+    expire_in: 2h
+    reports:
+      dotenv: ./${JOBNAME}/build.env
+
+latestABrelease:
+  rules:
+    - when: always
+  stage: build
+  tags:
+    - cvmfs
+  variables:
+    JOBNAME: job_latestABrelease
+  script:
+    - *prepare_dirs
+    - source ${CI_PROJECT_DIR}/.gitlab/ci_scripts/setup_latest_AB_release.sh
+    - *setup_kerberos
+    - *compile_topcptoolkit
+    - echo "BUILD_PATH=${JOBNAME}/${BUILD_DIR}" >> build.env
+    - echo "ASETUP_PATH=${JOBNAME}" >> build.env
+  needs: []
+  artifacts:
+    paths:
+      - ${JOBNAME}
+    name: ${BUILD_DIR}_${CI_JOB_NAME}
+    expire_in: 2h
+    reports:
+      dotenv: ./${JOBNAME}/build.env
+
+referenceABTopCPToolkitTag:
+  rules:
+    - when: always
+  stage: build
+  tags:
+    - cvmfs
+  variables:
+    JOBNAME: job_referenceABTag
+  script:
+    - *prepare_dirs
+    - source ${CI_PROJECT_DIR}/.gitlab/ci_scripts/setup_latest_AB_release.sh
+    - source ${CI_PROJECT_DIR}/.gitlab/ci_scripts/setup_latest_TopCPToolkitTag.sh
+    - *setup_kerberos
+    - *compile_topcptoolkit
+    - echo "BUILD_PATH=${JOBNAME}/${BUILD_DIR}" >> build.env
+    - echo "ASETUP_PATH=${JOBNAME}" >> build.env
+  needs:
+    - job: latestABrelease
+      artifacts: false
+  artifacts:
+    paths:
+      - ${JOBNAME}
+    name: ${BUILD_DIR}_${CI_JOB_NAME}
+    expire_in: 2h
+    reports:
+      dotenv: ./${JOBNAME}/build.env
+
+lastweekABTopCPToolkitTag:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+  stage: build
+  tags:
+    - cvmfs
+  variables:
+    JOBNAME: job_lastweekABTag
+  script:
+    - *prepare_dirs
+    - source ${CI_PROJECT_DIR}/.gitlab/ci_scripts/setup_penultimate_AB_release.sh
+    - source ${CI_PROJECT_DIR}/.gitlab/ci_scripts/setup_latest_TopCPToolkitTag.sh
+    - *setup_kerberos
+    - *compile_topcptoolkit
+    - echo "BUILD_PATH=${JOBNAME}/${BUILD_DIR}" >> build.env
+    - echo "ASETUP_PATH=${JOBNAME}" >> build.env
+  needs:
+    - job: referenceABTopCPToolkitTag
+      artifacts: false
+  artifacts:
+    paths:
+      - ${JOBNAME}
+    name: ${BUILD_DIR}_${CI_JOB_NAME}
+    expire_in: 2h
+    reports:
+      dotenv: ./${JOBNAME}/build.env
+
+latestABnightly:
+  rules:
+    - when: always
+  stage: build
+  tags:
+    - cvmfs
+  variables:
+    JOBNAME: job_latestABnightly
+  script:
+    - *prepare_dirs
+    - source ${CI_PROJECT_DIR}/.gitlab/ci_scripts/setup_latest_AB_nightly.sh
+    - lsetup cppcheck
+    - *setup_kerberos
+    - *compile_topcptoolkit
+    - echo "BUILD_PATH=${JOBNAME}/${BUILD_DIR}" >> build.env
+    - echo "ASETUP_PATH=${JOBNAME}" >> build.env
+  needs: []
+  artifacts:
+    paths:
+      - ${JOBNAME}
+    name: ${BUILD_DIR}_${CI_JOB_NAME}
+    expire_in: 2h
+    reports:
+      dotenv: ./${JOBNAME}/build.env
+
+latestABrelease4tutorial:
+  rules:
+    - when: always
+  stage: build
+  tags:
+    - cvmfs
+  variables:
+    JOBNAME: job_latestABrelease4tutorial
+  script:
+    - *prepare_dirs
+    - source ${CI_PROJECT_DIR}/.gitlab/ci_scripts/setup_latest_AB_release.sh
+    - *setup_kerberos
+    - cd ${CI_PROJECT_DIR} && source solve_tutorial.sh && cd ${JOBNAME}
+    - *compile_topcptoolkit
+    - echo "BUILD_PATH=${JOBNAME}/${BUILD_DIR}" >> build.env
+    - echo "ASETUP_PATH=${JOBNAME}" >> build.env
+  needs: []
+  artifacts:
+    paths:
+      - ${JOBNAME}
+    name: ${BUILD_DIR}_${CI_JOB_NAME}
+    expire_in: 2h
+    reports:
+      dotenv: ./${JOBNAME}/build.env
+
+cppcheck:
+  only:
+    - merge_requests
+  stage: checks
+  tags:
+    - cvmfs
+  variables:
+    JOBNAME: job_cppcheck_latestABnightly
+  needs: [latestABnightly]
+  allow_failure:
+    exit_codes:
+      - 2
+  script:
+    - set +e
+    - cd ${CI_PROJECT_DIR}/${ASETUP_PATH}
+    - source ${CI_PROJECT_DIR}/.gitlab/ci_scripts/setup_latest_AB_nightly.sh
+    - lsetup cppcheck
+    - echo ${BUILD_PATH}
+    - cd ${CI_PROJECT_DIR}/${BUILD_PATH}
+    - set -e
+    - cppcheck -j6  --std=c++17  --quiet --error-exitcode=1 --enable=warning,portability,performance --inline-suppr  -D__CPPCHECK__  -DATOMIC_POINTER_LOCK_FREE=2   --template=gcc  --suppress=*:*Boost* --suppress=*:*Dict.*  --project=compile_commands.json > cppcheck.log 2>&1 || true
+    - set +e
+    - |
+      if grep 'error' cppcheck.log; then
+         echo "Errors found by cppcheck!"
+         exit 1
+      elif grep 'TopCPToolkit.*warning' cppcheck.log | grep -v '\[normalCheckLevelMaxBranches\]' ; then
+         echo "Warnings found by cppcheck, please try to correct them!"
+         exit 2
+      else
+         echo "No issues found by cppcheck"
+         exit 0
+      fi
+  artifacts:
+    paths:
+      - ${CI_PROJECT_DIR}/${BUILD_PATH}/cppcheck.log
+    expire_in: 2h
+    name: ${BUILD_DIR}_${CI_JOB_NAME}

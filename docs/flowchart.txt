@@ -1,0 +1,61 @@
+The following snippet was used to generate flowchart.png using mermaid.js:
+```
+graph LR;
+
+    A[DAOD_PHYS
+    DAOD_PHYSLITE]
+
+    B((("`**TopCPToolkit**`")))
+
+    C[(Common CP algorithms:
+    central support)]
+
+    D(Custom analysis code:
+    share & re-use)
+
+    F[
+    metadata and histograms
+    reco tree
+    particle-level tree
+    parton-level tree]
+
+    G[/"`**FastFrames**`"\]
+
+    H(Other frameworks)
+
+    I{"`**TRExFitter**`"}
+
+    subgraph ntup ["`_ntupling_`"]
+        C --> B
+        A ---> B
+        D --> B
+    end
+    B ==>|ntuple| F
+    subgraph post ["`_post-processing_`"]
+    F -->|compatible| G
+    F -.-> H
+    end
+    subgraph stat ["`_statistical analysis_`"]
+    G -->|histograms| I
+    end
+
+    click G href "https://atlas-project-topreconstruction.web.cern.ch/fastframesdocumentation/" "FastFrames documentation" _blank
+    click I href "https://trexfitter-docs.web.cern.ch/trexfitter-docs/" "TRExFitter documentation" _blank
+
+style B fill:#6699cc,stroke:#334d66,stroke-width:2px; % TopCPToolkit
+style F fill:#6699cc,stroke:#334d66,stroke-width:2px; % Output Ntuple
+style G fill:#ffd700,stroke:#b88a00,stroke-width:2px; % FastFrames
+style I fill:#ffd700,stroke:#b88a00,stroke-width:2px; % TRExFitter
+style C fill:#8fbb8f,stroke:#4d664d,stroke-width:2px; % Common CP algorithms
+style D fill:#8fbb8f,stroke:#4d664d,stroke-width:2px; % Custom analysis code
+
+style ntup fill:#ddeadd,stroke:#a3d6a3,stroke-width:1px;
+style post fill:#ebf4fa,stroke:#aec6cf,stroke-width:1px;
+style stat fill:#fff8dc,stroke:#d2b48c,stroke-width:1px;
+
+classDef largeFont font-size:14pt;
+class A largeFont;
+class B largeFont;
+class G largeFont;
+class I largeFont;
+```

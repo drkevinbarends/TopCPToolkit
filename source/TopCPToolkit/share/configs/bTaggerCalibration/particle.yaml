@@ -1,0 +1,55 @@
+CommonServices: {}
+
+GeneratorLevelAnalysis: {}
+
+ParticleLevel:
+  useTruthLargeRJets: True
+  useTruthPhotons: True
+  useTruthTaus: True
+
+EventSelection:
+  - electrons: 'ParticleLevelElectrons'
+    muons: 'ParticleLevelMuons'
+    jets: 'ParticleLevelJets'
+    met: 'ParticleLevelMissingET'
+    metTerm: 'NonInt'
+    noFilter: False
+    cutFlowHistograms: True
+    selectionCutsDict:
+      'SUBcommon': |
+        JET_N 25000 >= 4
+        MET >= 20000
+        SAVE
+      'ejets': |
+        IMPORT SUBcommon
+        EL_N 25000 >= 1
+        MU_N 25000 == 0
+        MWT < 170000
+        MET+MWT > 40000
+        SAVE
+
+# After configuring each container, many variables will be saved automatically.
+Output:
+  treeName: 'particleLevel'
+  vars:
+    - 'EventInfo.mcChannelNumber -> mcChannelNumber'
+    - 'EventInfo.runNumber -> runNumber'
+    - 'EventInfo.eventNumber -> eventNumber'
+  metVars: []
+  metTermName: 'NonInt'
+  containers:
+      # Format should follow: '<suffix>:<output container>'
+      '': 'EventInfo'
+      'el_': 'ParticleLevelElectrons'
+      'mu_': 'ParticleLevelMuons'
+      'ph_': 'ParticleLevelPhotons'
+      'tau_': 'ParticleLevelTaus'
+      'jet_': 'ParticleLevelJets'
+      'ljet_': 'ParticleLevelLargeRJets'
+      'met_': 'ParticleLevelMissingET'
+
+AddConfigBlocks:
+    - modulePath: 'TopCPToolkit.particleLevelConfig'
+      functionName: 'particleLevelConfig'
+      algName: 'ParticleLevel'
+      pos: 'EventSelection'

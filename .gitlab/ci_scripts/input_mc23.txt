@@ -1,0 +1,1 @@
+/cvmfs/atlas.cern.ch/repo/sw/database/GroupData/dev/AnalysisTop/ContinuousIntegration/R22-Run3/MC/p5980/DAOD_PHYS.601229_r14622_p5980.pool.root.1

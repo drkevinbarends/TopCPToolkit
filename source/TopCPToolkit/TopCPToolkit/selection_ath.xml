@@ -1,0 +1,15 @@
+<lcgdict>
+
+    <!-- This file contains a list of all classes for which a dictionary
+         should be created in athena (doesn't need as many as AnalysisBase, just things that are written to sg). -->
+    <class name="xAOD::KLFitterResult" />
+    <class name="DataVector<xAOD::KLFitterResult>" />
+    <typedef name="xAOD::KLFitterResultContainer" />
+    <class name="xAOD::KLFitterResultAuxContainer" />
+    <class name="xAOD::PartonHistory" />
+    <class name="DataVector<xAOD::PartonHistory>" />
+    <typedef name="xAOD::PartonHistoryContainer" />
+    <class name="xAOD::PartonHistoryAuxContainer" />
+    <class name="xAOD::PartonHistoryAux" />
+
+</lcgdict>

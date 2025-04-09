@@ -1,0 +1,23 @@
+<lcgdict>
+
+  <!-- This file contains a list of all classes for which a dictionary
+       should be created. -->
+
+  <class name="top::RunPartonHistoryAlg" />
+  <class name="top::CARAlg" />
+  <class name="top::ParticleLevelAlg" />
+  <class name="top::PartonToJetsMatchAlg" />
+  <class name="top::KLFitterAlg" />
+  <class name="top::KLFitterResult" />
+  <class name="top::KLFitterResultContainer" />
+  <class name="top::KLFitterResultAuxContainer" />
+  <class name="top::KLFitterFinalizeOutputAlg" />
+  <class name="top::RunSpaNetAlg" />
+  <class name="top::RunTtbarNNLORecursiveRewAlg" />
+  <class name="top::JetMatchingAlg" />
+  <function name="top::preloadComponentFactories" />
+  <class name="top::SoftMuonSelectorAlg" />
+  <class name="top::PartonHistoryToSpinInputAlg" />
+  <class name="top::TopSpinDensityMatrixAlg" />
+
+</lcgdict>
