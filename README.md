@@ -22,3 +22,16 @@ If you want to submit jobs on the grid (and if you are an ATLAS VOMS member), ru
 source gridSetup.sh
 ```
 
+## Running the package
+
+First move into the "run" directory:
+
+```bash
+cd ../run
+```
+
+For the tWZ analysis, we have created a config file to run only over reco objects under source/TopCPToolkit/share/configs/tWZ. In order to run using this config, please do the following. Note: Please ensure you have an input dataset to run over (for local jobs) and the file locations stored in some text file, e.g., input.txt.
+
+```bash
+runTop_el.py --no-systematics -t tWZ -i input.txt -o output.root
+```
