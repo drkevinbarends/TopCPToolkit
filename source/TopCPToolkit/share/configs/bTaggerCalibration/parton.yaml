@@ -1,0 +1,30 @@
+CommonServices: {}
+
+GeneratorLevelAnalysis: {}
+
+PartonHistory:
+  - histories: 'Ttbar'
+
+TtbarNNLO: {}
+
+# After configuring each container, many variables will be saved automatically.
+Output:
+  treeName: 'truth'
+  vars:
+    - 'EventInfo.mcChannelNumber -> mcChannelNumber'
+    - 'EventInfo.runNumber -> runNumber'
+    - 'EventInfo.eventNumber -> eventNumber'
+  containers:
+      # Format should follow: '<suffix>:<output container>'
+      '': 'EventInfo'
+      'Ttbar_': 'TopPartonHistoryTtbar'
+
+AddConfigBlocks:
+    - modulePath: 'TopCPToolkit.truthConfig'
+      functionName: 'truthConfig'
+      algName: 'PartonHistory'
+      pos: 'Output'
+    - modulePath: 'TopCPToolkit.TtbarNNLORecursiveRewConfig'
+      functionName: 'TtbarNNLORecursiveRewConfig'
+      algName: 'TtbarNNLO'
+      pos: 'Output'

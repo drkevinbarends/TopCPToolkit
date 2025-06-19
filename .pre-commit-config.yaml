@@ -1,0 +1,32 @@
+repos:
+  - repo: https://github.com/psf/black
+    rev: 24.10.0  # Use the latest stable version
+    hooks:
+      - id: black
+        files: \.(py)$
+
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: 'v18.1.8'
+    hooks:
+      - id: clang-format
+        types_or: [file]
+        args: ["--style=file"]
+        files: \.(cpp|hpp|ipp|cxx|h)$
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v3.2.0
+    hooks:
+    - id: trailing-whitespace
+      exclude: \.(diff|patch)$
+    - id: end-of-file-fixer
+      exclude: \.(diff|patch)$
+    - id: check-yaml
+      exclude: mkdocs.yml
+    - id: check-added-large-files
+      exclude: source/TopCPToolkit/share/HyPER/
+
+  - repo: https://github.com/BlankSpruce/gersemi
+    rev: 0.15.0
+    hooks:
+    - id: gersemi
+      args: ["-i", "--no-warn-about-unknown-commands"]

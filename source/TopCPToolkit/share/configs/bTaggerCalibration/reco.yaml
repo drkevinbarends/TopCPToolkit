@@ -1,0 +1,230 @@
+CommonServices:
+  runSystematics: True
+  systematicsHistogram: 'listOfSystematics'
+  onlySystematicsCategories:
+    - met
+
+PileupReweighting: {}
+
+EventCleaning:
+    runEventCleaning: True
+
+Jets:
+  - containerName: 'AnaJets'
+    jetCollection: 'AntiKt4EMPFlowJets'
+    runJvtUpdate: False
+    runNNJvtUpdate: True
+    runGhostMuonAssociation: True
+    systematicsModelJES: 'Category'
+    systematicsModelJER: 'Full'
+    JVT: {}
+    PtEtaSelection:
+        minPt: 20000.0
+        maxEta: 2.5
+    FlavourTagging:
+      # GN2 v01
+      - &GN2v01_Config
+        btagger: 'GN2v01'
+        btagWP: 'FixedCutBEff_90'
+        bTagCalibFile : /cvmfs/atlas.cern.ch/repo/sw/database/GroupData/xAODBTaggingEfficiency/13p6TeV/2023-02_MC23_CDI_GN2v01-noSF.root
+      - <<: *GN2v01_Config
+        btagWP: 'FixedCutBEff_85'
+      - <<: *GN2v01_Config
+        btagWP: 'FixedCutBEff_77'
+      - <<: *GN2v01_Config
+        btagWP: 'FixedCutBEff_70'
+      - <<: *GN2v01_Config
+        btagWP: 'FixedCutBEff_65'
+      - <<: *GN2v01_Config
+        btagWP: 'Continuous'
+        # Add tag scores to the output
+        saveScores: 'All'
+        # Add SV Mass to the output
+        saveCustomVariables: ['SV1_masssvx']
+
+Electrons:
+  - containerName: 'AnaElectrons'
+    crackVeto: True
+    forceFullSimConfig: True # CONFIG_NOTE True if you want TCT to work with Fast-Simulation
+    WorkingPoint:
+      - selectionName: 'loose'
+        identificationWP: 'TightLH'
+        isolationWP: 'Loose_VarRad'
+        noEffSF: True # While we wait for recommendations.
+      - selectionName: 'tight'
+        identificationWP: 'TightLH'
+        isolationWP: 'Tight_VarRad'
+        noEffSF: True # While we wait for recommendations.
+    PtEtaSelection:
+        minPt: 25000.0
+        maxEta: 2.47
+
+Muons:
+  - containerName: 'AnaMuons'
+    WorkingPoint:
+      - selectionName: 'loose'
+        quality: 'Medium'
+        isolation: 'Loose_VarRad'
+      - selectionName: 'tight'
+        quality: 'Medium'
+        isolation: 'Tight_VarRad'
+        systematicBreakdown: True
+    PtEtaSelection:
+        minPt: 25000.0
+        maxEta: 2.5
+
+GeneratorLevelAnalysis: {}
+
+# containerName and postfix must be defined in their respective blocks
+OverlapRemoval:
+  inputLabel: 'preselectOR'
+  outputLabel: 'passesOR'
+  # Format should follow Object: '<containerName>.<postfix>'
+  jets: 'AnaJets.baselineJvt'
+  electrons: 'AnaElectrons.tight'
+  muons: 'AnaMuons.tight'
+
+# containerName and postfix must be defined in their respective blocks
+MissingET:
+  - containerName: 'AnaMET'
+    # Format should follow Object: '<containerName>.<postfix>'
+    jets: 'AnaJets'
+    electrons: 'AnaElectrons.tight'
+    muons: 'AnaMuons.tight'
+
+
+ObjectCutFlow:
+  - containerName: 'AnaElectrons'
+    selectionName: 'tight'
+  - containerName: 'AnaMuons'
+    selectionName: 'tight'
+  - containerName: 'AnaJets'
+    selectionName: 'baselineJvt'
+
+Thinning:
+  - containerName: 'AnaJets'
+    outputName: 'OutJets'
+    selectionName: 'baselineJvt'
+  - containerName: 'AnaElectrons'
+    outputName: 'OutElectrons'
+    selectionName: 'tight||loose'
+  - containerName: 'AnaMuons'
+    outputName: 'OutMuons'
+    selectionName: 'tight||loose'
+
+Trigger:
+    triggerChainsPerYear:
+        '2015':
+            - 'HLT_e24_lhmedium_L1EM20VH || HLT_e60_lhmedium || HLT_e120_lhloose'
+            - 'HLT_mu20_iloose_L1MU15 || HLT_mu40'
+        '2016':
+            - 'HLT_e26_lhtight_nod0_ivarloose || HLT_e60_lhmedium_nod0 || HLT_e140_lhloose_nod0'
+            - 'HLT_mu26_ivarmedium || HLT_mu50'
+        '2017':
+            - 'HLT_e26_lhtight_nod0_ivarloose || HLT_e60_lhmedium_nod0 || HLT_e140_lhloose_nod0'
+            - 'HLT_mu26_ivarmedium || HLT_mu50'
+        '2018':
+            - 'HLT_e26_lhtight_nod0_ivarloose || HLT_e60_lhmedium_nod0 || HLT_e140_lhloose_nod0'
+            - 'HLT_mu26_ivarmedium || HLT_mu50'
+        '2022':
+            - 'HLT_e26_lhtight_ivarloose_L1EM22VHI || HLT_e60_lhmedium_L1EM22VHI || HLT_e140_lhloose_L1EM22VHI'
+            - 'HLT_mu24_ivarmedium_L1MU14FCH || HLT_mu50_L1MU14FCH'
+        #'2023': # CONFIG_NOTE Uncomment for 2023 samples, please see the two options below.
+        #    - 'HLT_e26_lhtight_ivarloose_L1EM22VHI || HLT_e26_lhtight_ivarloose_L1eEM26M || HLT_e60_lhmedium_L1EM22VHI || HLT_e60_lhmedium_L1eEM26M || HLT_e140_lhloose_L1EM22VHI || HLT_e140_lhloose_L1eEM26M || HLT_e300_etcut_L1eEM26M || HLT_e140_lhloose_noringer_L1eEM26M'
+        #    - 'HLT_mu24_ivarmedium_L1MU14FCH || HLT_mu50_L1MU14FCH || HLT_mu60_0eta105_msonly_L1MU14FCH || HLT_mu60_L1MU14FCH || HLT_mu80_msonly_3layersEC_L1MU14FCH'
+
+    noEffSF: False # CONFIG_NOTE Only set this to True for 2023 samples
+    noGlobalTriggerEff: False # CONFIG_NOTE Only set this to True for 2023 samples
+    noFilter: False
+    electrons: 'AnaElectrons.tight'
+    muons: 'AnaMuons.tight'
+    electronID: 'Tight'
+    electronIsol: 'Tight_VarRad'
+    muonID: 'Medium'
+
+LeptonSF:
+  - muons: 'AnaMuons.tight'
+    # electrons: 'AnaElectrons.tight' when the rec are ready!
+    lepton_postfix: 'tight'
+
+EventSelection:
+  - electrons: 'AnaElectrons.tight'
+    muons: 'AnaMuons.tight'
+    jets: 'AnaJets.baselineJvt'
+    met: 'AnaMET'
+    btagDecoration: 'ftag_select_DL1dv01_FixedCutBEff_85'
+    noFilter: False
+    cutFlowHistograms: True
+    selectionCutsDict:
+     'SUBcommon': |
+       JET_N 20000 >= 4
+       MET >= 20000
+       SAVE
+     'ejets': |
+       IMPORT SUBcommon
+       EL_N 25000 >= 1
+       MU_N 25000 == 0
+       SAVE
+     'mujets': |
+       IMPORT SUBcommon
+       EL_N 25000 == 0
+       MU_N 25000 >= 1
+       SAVE
+
+PartonHistory:
+  - histories: 'Ttbar'
+
+PartonMatch:
+  jets: 'AnaJets.baselineJvt'
+  electrons: 'AnaElectrons.tight'
+  muons: 'AnaMuons.tight'
+  eventSelection: 'pass_ejets_%SYS%,as_char||pass_mujets_%SYS%,as_char'
+
+HyPER:
+  - topology: 'TtbarLJetsNoBTag'
+    OutputLevel: 3 # 3: INFO (DEFAULT) 2: DEBUG 1: VERBOSE
+    #fullLogEventNumber: 320922036
+    btagger: GN2v01_Continuous
+    electrons: 'AnaElectrons.tight'
+    muons: 'AnaMuons.tight'
+    jets: 'AnaJets.baselineJvt'
+    met: 'AnaMET'
+    eventSelection: 'pass_ejets_%SYS%,as_char || pass_mujets_%SYS%,as_char'
+
+# After configuring each container, many variables will be saved automatically.
+Output:
+  treeName: 'reco'
+  vars:
+    - EventInfo.averageInteractionsPerCrossing -> averageInteractionsPerCrossing
+    - EventInfo.actualInteractionsPerCrossing -> actualInteractionsPerCrossing
+  varsOnlyForMC:
+    - OutJets_NOSYS.HadronConeExclTruthLabelID -> jet_TruthFlavour
+    - OutJets_NOSYS.HadronConeExclExtendedTruthLabelID -> jet_TruthFlavouExtended
+  metVars: []
+  containers:
+      # Format should follow: '<suffix>:<output container>'
+      mu_: 'OutMuons'
+      el_: 'OutElectrons'
+      jet_: 'OutJets'
+      met_: 'AnaMET'
+      '': 'EventInfo'
+  containersOnlyForMC:
+      'Ttbar_History_': 'PartonHistoryTtbar'
+  #commands: # CONFIG_NOTE Use this to disable writing certain branches using regex.
+  #  - 'disable Ttbar_History_*' # CONFIG_NOTE This will disable all branches starting with 'Ttbar_History_'
+
+AddConfigBlocks:
+    - modulePath: 'TopCPToolkit.HyPERConfig'
+      functionName: 'HyPERConfig'
+      algName: 'HyPER'
+      pos: 'Output'
+    - modulePath: 'TopCPToolkit.truthConfig'
+      functionName: 'truthConfig'
+      algName: 'PartonHistory'
+      pos: 'Output'
+      skipOnData: True
+    - modulePath: 'TopCPToolkit.PartonMatchConfig'
+      functionName: 'PartonMatchConfig'
+      algName: 'PartonMatch'
+      pos: 'Output'
+      skipOnData: True

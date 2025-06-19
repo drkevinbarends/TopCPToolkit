@@ -1,0 +1,88 @@
+site_name: TopCPToolkit documentation
+site_description: Documentation for the TopCPToolkit software package
+site_author: Top Reco team
+site_url: https://topcptoolkit.docs.cern.ch/
+repo_name: atlasphys-top/TopCPToolkit
+repo_url: https://gitlab.cern.ch/atlasphys-top/reco/TopCPToolkit
+edit_uri: tree/main/docs
+theme:
+    name: material
+    palette:
+        primary: blue
+        accent: indigo
+    icon:
+        logo: material/graph-outline
+        repo: fontawesome/brands/gitlab
+    features:
+      - content.code.copy
+      - content.tabs.link
+      - navigation.instant
+      - navigation.tracking
+      - navigation.tabs
+#      - navigation.tabs.sticky
+      - navigation.sections
+      - navigation.indexes
+      - navigation.footer
+markdown_extensions:
+    - admonition
+    - codehilite
+    - attr_list
+    - pymdownx.arithmatex
+    - pymdownx.details
+    - pymdownx.inlinehilite
+    - pymdownx.smartsymbols
+    - pymdownx.superfences
+    - def_list
+    - pymdownx.emoji:
+        emoji_index: !!python/name:materialx.emoji.twemoji
+        emoji_generator: !!python/name:materialx.emoji.to_svg
+    - pymdownx.tabbed:
+        alternate_style: true
+extra_javascript:
+    - https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML
+
+nav:
+    - Home: index.md
+    - Getting started:
+        - Installation: starting/installation.md
+        - Running the event loop: starting/running_local.md
+        - Submitting jobs to the Grid: starting/running_grid.md
+        - Writing your own analysis: starting/analysis.md
+        - Handling multiple object selections: starting/multiple_selections.md
+        - Best practices for analysis: starting/best_practices.md
+        - Changelog:
+            - changelog/index.md
+        - Contributing:
+            - contributing/index.md
+            - Reporting a bug: contributing/reporting_bug.md
+            - Requesting a feature: contributing/requesting_feature.md
+            - Proposing a new algorithm: contributing/proposing_algorithm.md
+            - Suggesting an improvement: contributing/suggesting_improvement.md
+    - Tutorials:
+        - tutorials/index.md
+        - 0. Initial setup: tutorials/setup.md
+        - 1. Your first config: tutorials/write_config.md
+        - 2. Your first algorithm: tutorials/write_algorithm.md
+        - Understanding Grid jobs: tutorials/submit_grid.md
+        - Using machine learning: tutorials/machine_learning.md
+    - Settings:
+        - settings/index.md
+        - Electrons: settings/electrons.md
+        - Muons: settings/muons.md
+        - Photons: settings/photons.md
+        - Jets: settings/jets.md
+        - Taus: settings/taus.md
+        - Missing energy: settings/met.md
+        - Trigger: settings/trigger.md
+        - Overlap removal: settings/overlap.md
+        - Object selection: settings/objectselection.md
+        - Event-level scale factors: settings/scalefactors.md
+        - Event selection: settings/eventselection.md
+        - Event reconstruction: settings/reconstruction.md
+        - Truth content: settings/truth.md
+        - Output ntuple: settings/ntupling.md
+        - Other useful blocks and methods: settings/others.md
+        - Metadata-based autoconfiguration flags: settings/configflags.md
+        - Experimental: settings/experimental.md
+        - ONNX Wrapper: settings/onnxwrapper.md
+    - FAQ: faq/index.md

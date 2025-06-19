@@ -1,0 +1,52 @@
+CommonServices:
+  systematicsHistogram: 'listOfSystematicsPartonLevel'
+  runSystematics: True
+
+GeneratorLevelAnalysis: {}
+
+PartonHistory:
+  - histories: 'Ttbar'
+
+TtbarNNLO: {}
+
+SpinInputs:
+  - history: 'Ttbar'
+
+SpinMatrix:
+  - setup: 'QEttbarExample'
+    top: 'truth_top_4vect_%SYS%'
+    tbar: 'truth_tbar_4vect_%SYS%'
+    top_decay: 'truth_top_decay_4vect_%SYS%'
+    tbar_decay: 'truth_tbar_decay_4vect_%SYS%'
+    doHelicityBasis: True
+    doEntanglement: True
+
+# After configuring each container, many variables will be saved automatically.
+Output:
+  treeName: 'truth'
+  vars:
+    - 'EventInfo.mcChannelNumber -> mcChannelNumber'
+    - 'EventInfo.runNumber -> runNumber'
+    - 'EventInfo.eventNumber -> eventNumber'
+  containers:
+      # Format should follow: '<suffix>:<output container>'
+      '': 'EventInfo'
+      'Ttbar_': 'PartonHistoryTtbar'
+
+AddConfigBlocks:
+    - modulePath: 'TopCPToolkit.truthConfig'
+      functionName: 'truthConfig'
+      algName: 'PartonHistory'
+      pos: 'Output'
+    - modulePath: 'TopCPToolkit.TtbarNNLORecursiveRewConfig'
+      functionName: 'TtbarNNLORecursiveRewConfig'
+      algName: 'TtbarNNLO'
+      pos: 'Output'
+    - modulePath: 'TopCPToolkit.PartonHistoryToSpinInputConfig'
+      functionName: 'PartonHistoryToSpinInputConfig'
+      algName: 'SpinInputs'
+      pos: 'Output'
+    - modulePath: 'TopCPToolkit.TopSpinDensityMatrixConfig'
+      functionName: 'TopSpinDensityMatrixConfig'
+      algName: 'SpinMatrix'
+      pos: 'Output'

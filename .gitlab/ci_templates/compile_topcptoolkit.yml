@@ -1,0 +1,439 @@
+image: gitlab-registry.cern.ch/atlas-sit/docker/alma9-atlasos-dev:latest
+
+stages:
+  - lint
+  - build
+  - check
+
+variables:
+  SOURCE_DIR: source
+  SOURCE_DIR_ABS: "${CI_PROJECT_DIR}/${SOURCE_DIR}"
+  BUILD_DIR: build
+  BUILD_DIR_ABS: "${CI_PROJECT_DIR}/${BUILD_DIR}"
+
+.setup_kerberos: &setup_kerberos
+  - date
+  - echo "${EOS_ACCOUNT_PASSWORD}" | kinit ${EOS_ACCOUNT_USERNAME}@CERN.CH
+  - klist
+  - cp ${CI_PROJECT_DIR}/.gitlab/ci_scripts/custom_krb5.conf /etc/krb5.conf
+  - cp ${CI_PROJECT_DIR}/.gitlab/ci_scripts/custom_ssh.conf /etc/ssh/ssh_config
+  - echo -e "Host svn.cern.ch lxplus.cern.ch\n\tUser ${EOS_ACCOUNT_USERNAME}\n\tStrictHostKeyChecking no\n\tGSSAPIAuthentication yes\n\tGSSAPIDelegateCredentials yes\n\tProtocol 2\n\tForwardX11 no\n\tIdentityFile ~/.ssh/id_rsa" >> ~/.ssh/config
+  - cat ~/.ssh/config
+  - date
+
+.prepare_dirs: &prepare_dirs
+  - mkdir ${JOBNAME}
+  - cd ${JOBNAME}
+  - set +e
+
+.compile_topcptoolkit: &compile_topcptoolkit
+  - set -e
+  - mkdir ${BUILD_DIR}
+  - cd ${BUILD_DIR}
+  - cmake ${SOURCE_DIR_ABS}
+  - make -j4
+  - source ./*/setup.sh
+  - set +e
+  - cd ../
+
+latestAArelease:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      needs: [pre-commit]
+    - when: on_success  # Default rule for other cases
+  stage: build
+  interruptible: true
+  tags:
+    - cvmfs
+  variables:
+    JOBNAME: job_latestAArelease
+  script:
+    - *prepare_dirs
+    - source ${CI_PROJECT_DIR}/.gitlab/ci_scripts/setup_latest_AA_release.sh
+    - *setup_kerberos
+    - *compile_topcptoolkit
+    - echo "BUILD_PATH=${JOBNAME}/${BUILD_DIR}" >> build.env
+    - echo "ASETUP_PATH=${JOBNAME}" >> build.env
+  artifacts:
+    paths:
+      - ${JOBNAME}
+    name: ${BUILD_DIR}_${CI_JOB_NAME}
+    expire_in: 2h
+    reports:
+      dotenv: ./${JOBNAME}/build.env
+
+referenceAATopCPToolkitTag:
+  rules:
+    - when: on_success
+  stage: build
+  interruptible: true
+  tags:
+    - cvmfs
+  variables:
+    JOBNAME: job_referenceAATag
+  script:
+    - *prepare_dirs
+    - source ${CI_PROJECT_DIR}/.gitlab/ci_scripts/setup_latest_AA_release.sh
+    - source ${CI_PROJECT_DIR}/.gitlab/ci_scripts/setup_latest_TopCPToolkitTag.sh
+    - *setup_kerberos
+    - *compile_topcptoolkit
+    - echo "BUILD_PATH=${JOBNAME}/${BUILD_DIR}" >> build.env
+    - echo "ASETUP_PATH=${JOBNAME}" >> build.env
+  needs:
+    - job: latestAArelease
+      artifacts: false
+  artifacts:
+    paths:
+      - ${JOBNAME}
+    name: ${BUILD_DIR}_${CI_JOB_NAME}
+    expire_in: 2h
+    reports:
+      dotenv: ./${JOBNAME}/build.env
+
+lastweekAATopCPToolkitTag:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+  stage: build
+  interruptible: true
+  tags:
+    - cvmfs
+  variables:
+    JOBNAME: job_lastweekAATag
+  script:
+    - *prepare_dirs
+    - source ${CI_PROJECT_DIR}/.gitlab/ci_scripts/setup_penultimate_AA_release.sh
+    - source ${CI_PROJECT_DIR}/.gitlab/ci_scripts/setup_latest_TopCPToolkitTag.sh
+    - *setup_kerberos
+    - *compile_topcptoolkit
+    - echo "BUILD_PATH=${JOBNAME}/${BUILD_DIR}" >> build.env
+    - echo "ASETUP_PATH=${JOBNAME}" >> build.env
+  needs:
+    - job: referenceAATopCPToolkitTag
+      artifacts: false
+  artifacts:
+    paths:
+      - ${JOBNAME}
+    name: ${BUILD_DIR}_${CI_JOB_NAME}
+    expire_in: 2h
+    reports:
+      dotenv: ./${JOBNAME}/build.env
+
+latestAAnightly:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      needs: [pre-commit]
+    - when: on_success  # Default rule for other cases
+  stage: build
+  interruptible: true
+  tags:
+    - cvmfs
+  variables:
+    JOBNAME: job_latestAAnightly
+  script:
+    - *prepare_dirs
+    - source ${CI_PROJECT_DIR}/.gitlab/ci_scripts/setup_latest_AA_nightly.sh
+    - *setup_kerberos
+    - *compile_topcptoolkit
+    - echo "BUILD_PATH=${JOBNAME}/${BUILD_DIR}" >> build.env
+    - echo "ASETUP_PATH=${JOBNAME}" >> build.env
+  artifacts:
+    paths:
+      - ${JOBNAME}
+    name: ${BUILD_DIR}_${CI_JOB_NAME}
+    expire_in: 2h
+    reports:
+      dotenv: ./${JOBNAME}/build.env
+
+latestABrelease:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      needs: [pre-commit]
+    - when: on_success  # Default rule for other cases
+  stage: build
+  interruptible: true
+  tags:
+    - cvmfs
+  variables:
+    JOBNAME: job_latestABrelease
+  script:
+    - *prepare_dirs
+    - source ${CI_PROJECT_DIR}/.gitlab/ci_scripts/setup_latest_AB_release.sh
+    - *setup_kerberos
+    - *compile_topcptoolkit
+    - echo "BUILD_PATH=${JOBNAME}/${BUILD_DIR}" >> build.env
+    - echo "ASETUP_PATH=${JOBNAME}" >> build.env
+  artifacts:
+    paths:
+      - ${JOBNAME}
+    name: ${BUILD_DIR}_${CI_JOB_NAME}
+    expire_in: 2h
+    reports:
+      dotenv: ./${JOBNAME}/build.env
+
+referenceABTopCPToolkitTag:
+  rules:
+    - when: on_success
+  stage: build
+  interruptible: true
+  tags:
+    - cvmfs
+  variables:
+    JOBNAME: job_referenceABTag
+  script:
+    - *prepare_dirs
+    - source ${CI_PROJECT_DIR}/.gitlab/ci_scripts/setup_latest_AB_release.sh
+    - source ${CI_PROJECT_DIR}/.gitlab/ci_scripts/setup_latest_TopCPToolkitTag.sh
+    - *setup_kerberos
+    - *compile_topcptoolkit
+    - echo "BUILD_PATH=${JOBNAME}/${BUILD_DIR}" >> build.env
+    - echo "ASETUP_PATH=${JOBNAME}" >> build.env
+  needs:
+    - job: latestABrelease
+      artifacts: false
+  artifacts:
+    paths:
+      - ${JOBNAME}
+    name: ${BUILD_DIR}_${CI_JOB_NAME}
+    expire_in: 2h
+    reports:
+      dotenv: ./${JOBNAME}/build.env
+
+lastweekABTopCPToolkitTag:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+  stage: build
+  interruptible: true
+  tags:
+    - cvmfs
+  variables:
+    JOBNAME: job_lastweekABTag
+  script:
+    - *prepare_dirs
+    - source ${CI_PROJECT_DIR}/.gitlab/ci_scripts/setup_penultimate_AB_release.sh
+    - source ${CI_PROJECT_DIR}/.gitlab/ci_scripts/setup_latest_TopCPToolkitTag.sh
+    - *setup_kerberos
+    - *compile_topcptoolkit
+    - echo "BUILD_PATH=${JOBNAME}/${BUILD_DIR}" >> build.env
+    - echo "ASETUP_PATH=${JOBNAME}" >> build.env
+  needs:
+    - job: referenceABTopCPToolkitTag
+      artifacts: false
+  artifacts:
+    paths:
+      - ${JOBNAME}
+    name: ${BUILD_DIR}_${CI_JOB_NAME}
+    expire_in: 2h
+    reports:
+      dotenv: ./${JOBNAME}/build.env
+
+latestABnightly:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      needs: [pre-commit]
+    - when: on_success  # Default rule for other cases
+  stage: build
+  interruptible: true
+  tags:
+    - cvmfs
+  variables:
+    JOBNAME: job_latestABnightly
+  script:
+    - *prepare_dirs
+    - source ${CI_PROJECT_DIR}/.gitlab/ci_scripts/setup_latest_AB_nightly.sh
+    - lsetup cppcheck
+    - *setup_kerberos
+    - *compile_topcptoolkit
+    - echo "BUILD_PATH=${JOBNAME}/${BUILD_DIR}" >> build.env
+    - echo "ASETUP_PATH=${JOBNAME}" >> build.env
+  artifacts:
+    paths:
+      - ${JOBNAME}
+    name: ${BUILD_DIR}_${CI_JOB_NAME}
+    expire_in: 2h
+    reports:
+      dotenv: ./${JOBNAME}/build.env
+
+latestABrelease4tutorial:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      needs: [pre-commit]
+    - when: on_success  # Default rule for other cases
+  stage: build
+  interruptible: true
+  tags:
+    - cvmfs
+  variables:
+    JOBNAME: job_latestABrelease4tutorial
+  script:
+    - *prepare_dirs
+    - source ${CI_PROJECT_DIR}/.gitlab/ci_scripts/setup_latest_AB_release.sh
+    - *setup_kerberos
+    - cd ${CI_PROJECT_DIR} && source solve_tutorial.sh && cd ${JOBNAME}
+    - *compile_topcptoolkit
+    - echo "BUILD_PATH=${JOBNAME}/${BUILD_DIR}" >> build.env
+    - echo "ASETUP_PATH=${JOBNAME}" >> build.env
+  artifacts:
+    paths:
+      - ${JOBNAME}
+    name: ${BUILD_DIR}_${CI_JOB_NAME}
+    expire_in: 2h
+    reports:
+      dotenv: ./${JOBNAME}/build.env
+
+cppcheck:
+  only:
+    - merge_requests
+  stage: check
+  tags:
+    - cvmfs
+  variables:
+    JOBNAME: job_cppcheck_latestABnightly
+  needs: [latestABnightly]
+  allow_failure:
+    exit_codes:
+      - 2
+  script:
+    - set +e
+    - cd ${CI_PROJECT_DIR}/${ASETUP_PATH}
+    - source ${CI_PROJECT_DIR}/.gitlab/ci_scripts/setup_latest_AB_nightly.sh
+    - lsetup cppcheck
+    - echo ${BUILD_PATH}
+    - cd ${CI_PROJECT_DIR}/${BUILD_PATH}
+    - set -e
+    - cppcheck -j6  --std=c++20  --quiet --error-exitcode=1 --enable=warning,portability,performance --inline-suppr  -D__CPPCHECK__  -DATOMIC_POINTER_LOCK_FREE=2   --template=gcc  --suppress=*:*Boost* --suppress=*:*Dict.*  --project=compile_commands.json > cppcheck.log 2>&1 || true
+    - set +e
+    - |
+      if grep 'error' cppcheck.log; then
+         echo "Errors found by cppcheck!"
+         exit 1
+      elif grep 'TopCPToolkit.*warning' cppcheck.log | grep -v '\[normalCheckLevelMaxBranches\]' ; then
+         echo "Warnings found by cppcheck, please try to correct them!"
+         exit 2
+      else
+         echo "No issues found by cppcheck"
+         exit 0
+      fi
+  artifacts:
+    paths:
+      - ${CI_PROJECT_DIR}/${BUILD_PATH}/cppcheck.log
+    expire_in: 2h
+    name: ${BUILD_DIR}_${CI_JOB_NAME}
+
+format-check:
+  rules:
+    # We can only run this test in an MR that is not from a fork
+    - if: '$CI_MERGE_REQUEST_IID && ( $CI_PROJECT_PATH == $CI_MERGE_REQUEST_SOURCE_PROJECT_PATH )'
+  stage: check
+  image: gitlab-registry.cern.ch/ravinab/custom_docker:latest
+  needs: [latestABnightly]
+  allow_failure: true
+  before_script:
+    - pip install flake8
+  script:
+    - cd ${CI_PROJECT_DIR}
+    - git config --global --add safe.directory ${CI_PROJECT_DIR}
+    - git fetch --unshallow
+    - git fetch origin main
+    - git fetch origin $CI_COMMIT_REF_NAME
+    - git checkout $CI_COMMIT_REF_NAME
+
+    # Get list of added or modified C++ and Python files
+    - CHANGED_CPP_FILES=$(git diff --diff-filter=ACMRTUXB --name-only origin/main...HEAD -- '*.cxx' '*.h')
+    - CHANGED_PY_FILES=$(git diff --diff-filter=ACMRTUXB --name-only origin/main...HEAD -- '*.py')
+
+    # Initialize a flag for warnings
+    - FORMAT_ISSUES=0
+
+    # Check formatting for C++ files
+    - |
+      if [ -n "$CHANGED_CPP_FILES" ]; then
+        for file in $CHANGED_CPP_FILES; do
+          echo "Checking formatting for: $file"
+          if ! clang-format -style=file "$file" | diff -u "$file" -; then
+            echo "Formatting changes suggested for $file"
+            FORMAT_ISSUES=1
+          fi
+        done
+      fi
+
+    # Check formatting for Python files
+    - |
+      if [ -n "$CHANGED_PY_FILES" ]; then
+        echo "Checking black for Python files:"
+        echo "$CHANGED_PY_FILES"
+        if ! black --check --diff $CHANGED_PY_FILES; then
+          FORMAT_ISSUES=1
+        fi
+      fi
+
+    # Check lint of Python files
+    - |
+      if [ -n "$CHANGED_PY_FILES" ]; then
+        echo "Checking flake8 for Python files:"
+        echo "$CHANGED_PY_FILES"
+        if ! flake8 --ignore B006,B007,B019,E501,W503,W504,W605 $CHANGED_PY_FILES; then
+          FORMAT_ISSUES=1
+        fi
+      fi
+
+    # Mark job with a warning if formatting issues were found
+    - |
+      if [ $FORMAT_ISSUES -eq 1 ]; then
+        echo "Formatting issues detected. Marking job as warning."
+        exit 1  # Exit with non-zero status to indicate issues
+      fi
+
+# Run pre-commit hooks
+pre-commit:
+  rules:
+    # Coming from a fork
+    - if: '$CI_MERGE_REQUEST_IID && ( $CI_MERGE_REQUEST_PROJECT_PATH != $CI_MERGE_REQUEST_SOURCE_PROJECT_PATH )'
+      allow_failure: true
+    # Coming from the main repo
+    - if: '$CI_MERGE_REQUEST_IID && ( $CI_MERGE_REQUEST_PROJECT_PATH == $CI_MERGE_REQUEST_SOURCE_PROJECT_PATH )'
+      allow_failure: false
+  stage: lint
+  image: registry.cern.ch/docker.io/library/python:3.13
+  script:
+    - export PATH=/root/.local/bin:$PATH
+    - pip install pipx
+    - pipx install pre-commit
+    - cd ${CI_PROJECT_DIR}
+    - git config --global --add safe.directory ${CI_PROJECT_DIR}
+    - git config user.email "atlas.top.reconstruction@cern.ch"
+    - git config user.name "ATLAS Top Reconstruction"
+    # Check if the MR originates from a fork
+    - echo $CI_PROJECT_PATH
+    - echo $CI_MERGE_REQUEST_SOURCE_PROJECT_PATH
+    - echo $CI_MERGE_REQUEST_PROJECT_PATH
+    - |
+      if [ "$CI_MERGE_REQUEST_PROJECT_PATH" != "$CI_MERGE_REQUEST_SOURCE_PROJECT_PATH" ]; then
+        echo "Merge request originates from a fork: $CI_MERGE_REQUEST_SOURCE_PROJECT_PATH"
+        IS_FORK=true
+      else
+        echo "Merge request originates from the same repository"
+        IS_FORK=false
+      fi
+
+    # If we are on the main branch, allow to push fixes.
+    # Else, only display a warning message.
+    - |
+      if [ "$IS_FORK" = false ]; then
+        git fetch origin $CI_COMMIT_REF_NAME
+        git checkout $CI_COMMIT_REF_NAME
+        pre-commit run --all-files || true
+        git add .
+        if ! git diff --cached --quiet; then
+          git commit -m "Apply pre-commit fixes"
+          # Set up the remote URL to use the PAT for authentication
+          git remote set-url origin https://topreco:$CI_ACCESS_TOKEN@gitlab.cern.ch/$CI_PROJECT_PATH.git
+          # Push the changes using the PAT
+          git push origin $CI_COMMIT_REF_NAME
+          exit 1
+        fi
+      else
+        pre-commit run --all-files || true
+        echo "Printing changes made by pre-commit hooks..."
+        git status
+        git diff --exit-code
+      fi

@@ -1,0 +1,53 @@
+CommonServices: {}
+
+GeneratorLevelAnalysis: {}
+
+PL_Electrons:
+  PtEtaSelection:
+    useDressedProperties: True
+    minPt: 25000.0
+    maxEta: 2.5
+
+PL_Muons:
+  PtEtaSelection:
+    useDressedProperties: True
+    minPt: 25000.0
+    maxEta: 2.5
+
+PL_Jets:
+  containerName: 'AntiKt4TruthDressedWZJets'
+  PtEtaSelection:
+     minPt: 25000.0
+     maxEta: 2.5
+
+PL_MissingET: {}
+
+PL_OverlapRemoval:
+  electrons: TruthElectrons
+  muons: TruthMuons
+  jets: AntiKt4TruthDressedWZJets
+
+Thinning:
+  - containerName: 'TruthElectrons'
+    outputName: 'OutTruthElectrons'
+  - containerName: 'TruthMuons'
+    outputName: 'OutTruthMuons'
+  - containerName: 'AntiKt4TruthDressedWZJets'
+    outputName: 'OutTruthJets'
+
+# After configuring each container, many variables will be saved automatically.
+Output:
+  treeName: 'particleLevel'
+  vars:
+    - 'EventInfo.mcChannelNumber -> mcChannelNumber'
+    - 'EventInfo.runNumber -> runNumber'
+    - 'EventInfo.eventNumber -> eventNumber'
+  metVars: []
+  metTermName: 'NonInt'
+  containers:
+      # Format should follow: '<suffix>:<output container>'
+      'PL_': 'EventInfo'
+      'PL_el_': 'OutTruthElectrons'
+      'PL_mu_': 'OutTruthMuons'
+      'PL_jet_': 'OutTruthJets'
+      'PL_met_': 'TruthMET'

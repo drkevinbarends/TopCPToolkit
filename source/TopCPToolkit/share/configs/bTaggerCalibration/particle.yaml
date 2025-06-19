@@ -1,0 +1,107 @@
+CommonServices: {}
+
+GeneratorLevelAnalysis: {}
+
+PL_Electrons:
+  notFromTau: False
+  PtEtaSelection:
+    useDressedProperties: True
+    minPt: 25000.0
+    maxEta: 2.5
+
+PL_Muons:
+  notFromTau: False
+  PtEtaSelection:
+    useDressedProperties: True
+    minPt: 25000.0
+    maxEta: 2.5
+
+PL_Jets:
+  - containerName: 'AntiKt4TruthDressedWZJets'
+    PtEtaSelection:
+       minPt: 25000.0
+       maxEta: 2.5
+  - containerName: 'AntiKt10TruthTrimmedPtFrac5SmallR20Jets'
+    PtEtaSelection:
+       minPt: 25000.0
+       maxEta: 2.5
+
+PL_Neutrinos:
+  isolated: False
+  notFromTau: False
+
+PL_Taus:
+  PtEtaSelection:
+    minPt: 25000.0
+    maxEta: 2.5
+
+PL_MissingET: {}
+
+PL_Photons:
+  isolated: False
+  PtEtaSelection:
+    minPt: 25000.0
+    maxEta: 2.5
+
+PL_OverlapRemoval:
+  electrons: TruthElectrons
+  muons: TruthMuons
+  photons: TruthPhotons
+  jets: AntiKt4TruthDressedWZJets
+  useRapidityForDeltaR: False
+
+Thinning:
+  - containerName: 'TruthElectrons'
+    outputName: 'OutTruthElectrons'
+  - containerName: 'TruthMuons'
+    outputName: 'OutTruthMuons'
+  - containerName: 'TruthNeutrinos'
+    outputName: 'OutTruthNeutrinos'
+  - containerName: 'AntiKt4TruthDressedWZJets'
+    outputName: 'OutTruthJets'
+  - containerName: 'AntiKt10TruthTrimmedPtFrac5SmallR20Jets'
+    outputName: 'OutTruthLargeRJets'
+  - containerName: 'TruthTaus'
+    outputName: 'OutTruthTaus'
+  - containerName: 'TruthPhotons'
+    outputName: 'OutTruthPhotons'
+
+EventSelection:
+  - electrons: 'TruthElectrons'
+    muons: 'TruthMuons'
+    jets: 'AntiKt4TruthDressedWZJets'
+    met: 'TruthMET'
+    metTerm: 'NonInt'
+    noFilter: False
+    cutFlowHistograms: True
+    selectionCutsDict:
+      'SUBcommon': |
+        JET_N 25000 >= 4
+        MET >= 20000
+        SAVE
+      'ejets': |
+        IMPORT SUBcommon
+        EL_N 25000 >= 1
+        MU_N 25000 == 0
+        MWT < 170000
+        MET+MWT > 40000
+        SAVE
+
+# After configuring each container, many variables will be saved automatically.
+Output:
+  treeName: 'particleLevel'
+  vars:
+    - 'EventInfo.mcChannelNumber -> mcChannelNumber'
+    - 'EventInfo.runNumber -> runNumber'
+    - 'EventInfo.eventNumber -> eventNumber'
+  containers:
+      # Format should follow: '<suffix>:<output container>'
+      'PL_': 'EventInfo'
+      'PL_el_': 'OutTruthElectrons'
+      'PL_mu_': 'OutTruthMuons'
+      'PL_nu_': 'OutTruthNeutrinos'
+      'PL_jet_': 'OutTruthJets'
+      'PL_ljet_': 'OutTruthLargeRJets'
+      'PL_tau_': 'OutTruthTaus'
+      'PL_met_': 'TruthMET'
+      'PL_ph_': 'OutTruthPhotons'

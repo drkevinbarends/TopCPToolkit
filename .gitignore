@@ -1,0 +1,12 @@
+.cache
+build
+run
+compile_commands.json
+#*
+*~
+*.DS_Store
+**/.asetup.save
+samples/*
+AthSummary.txt
+*__pycache__*
+*.tar.gz

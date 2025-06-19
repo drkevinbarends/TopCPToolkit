@@ -1,0 +1,161 @@
+CommonServices:
+  systematicsHistogram: 'listOfSystematics'
+
+PileupReweighting: {}
+
+EventCleaning:
+    runEventCleaning: True
+
+GeneratorLevelAnalysis: {}
+
+Jets:
+  - containerName: 'AnaJets'
+    jetCollection: 'AntiKt4EMPFlowJets'
+    runNNJvtUpdate: True
+    systematicsModelJES: 'Category'
+    systematicsModelJER: 'Full'
+    JVT: {}
+    PtEtaSelection:
+        minPt: 25000.0
+        maxEta: 2.5
+    FlavourTagging:
+      - btagger: 'GN2v01'
+        btagWP: 'FixedCutBEff_85'
+      - btagger: 'GN2v01'
+        btagWP: 'FixedCutBEff_70'
+      - btagger: 'GN2v01'
+        btagWP: 'Continuous'
+    FlavourTaggingEventSF:
+      - containerName: 'AnaJets.baselineJvt'
+        btagger: 'GN2v01'
+        btagWP: 'Continuous'
+
+Electrons:
+  - containerName: 'AnaElectrons'
+    crackVeto: True
+    IFFClassification: {}
+    WorkingPoint:
+      - selectionName: 'loose'
+        identificationWP: 'TightLH'
+        isolationWP: 'NonIso'
+        noEffSF: True
+      - selectionName: 'tight'
+        identificationWP: 'TightLH'
+        isolationWP: 'Tight_VarRad'
+        noEffSF: True
+    PtEtaSelection:
+        minPt: 25000.0
+        maxEta: 2.47
+        useClusterEta: True
+
+Muons:
+  - containerName: 'AnaMuons'
+    IFFClassification: {}
+    WorkingPoint:
+      - selectionName: 'loose'
+        quality: 'Medium'
+        isolation: 'NonIso'
+      - selectionName: 'tight'
+        quality: 'Medium'
+        isolation: 'Tight_VarRad'
+        systematicBreakdown: True
+    PtEtaSelection:
+        minPt: 25000.0
+        maxEta: 2.5
+
+MissingET:
+  - containerName: 'AnaMET'
+    # Format should follow Object: '<containerName>.<postfix>'
+    jets: 'AnaJets'
+    electrons: 'AnaElectrons.tight'
+    muons: 'AnaMuons.tight'
+
+OverlapRemoval:
+  inputLabel: 'preselectOR'
+  outputLabel: 'passesOR'
+  # Format should follow Object: '<containerName>.<postfix>'
+  jets: 'AnaJets.baselineJvt'
+  electrons: 'AnaElectrons.tight'
+  muons: 'AnaMuons.tight'
+
+ObjectCutFlow:
+  - containerName: 'AnaElectrons'
+    selectionName: 'tight'
+  - containerName: 'AnaJets'
+    selectionName: 'baselineJvt'
+  - containerName: 'AnaMuons'
+    selectionName: 'tight'
+
+Thinning:
+  - containerName: 'AnaJets'
+    outputName: 'OutJets'
+    selectionName: 'baselineJvt'
+  - containerName: 'AnaElectrons'
+    outputName: 'OutElectrons'
+    selectionName: 'tight||loose'
+  - containerName: 'AnaMuons'
+    outputName: 'OutMuons'
+    selectionName: 'tight||loose'
+
+LeptonSF:
+  #- electrons: 'AnaElectrons.tight'
+  - muons: 'AnaMuons.tight'
+    lepton_postfix: 'tight'
+
+Trigger:
+    triggerChainsPerYear:
+        '2018':
+            - 'HLT_e26_lhtight_nod0_ivarloose || HLT_e60_lhmedium_nod0 || HLT_e140_lhloose_nod0'
+            - 'HLT_mu26_ivarmedium || HLT_mu50'
+        '2022':
+            - 'HLT_e26_lhtight_ivarloose_L1EM22VHI || HLT_e60_lhmedium_L1EM22VHI || HLT_e140_lhloose_L1EM22VHI'
+            - 'HLT_mu24_ivarmedium_L1MU14FCH || HLT_mu50_L1MU14FCH'
+    noFilter: False
+    electrons: 'AnaElectrons.tight'
+    electronID: 'Tight'
+    electronIsol: 'Tight_VarRad'
+    muons: 'AnaMuons.tight'
+    muonID: 'Medium'
+
+EventSelection:
+  - electrons: 'AnaElectrons.loose'
+    muons: 'AnaMuons.tight'
+    jets: 'AnaJets.baselineJvt'
+    met: 'AnaMET'
+    btagDecoration: 'ftag_select_GN2v01_FixedCutBEff_85'
+    noFilter: False
+    cutFlowHistograms: True
+    selectionCutsDict:
+      'SUBcommon': |
+        JET_N_BTAG >= 2
+        JET_N 25000 >= 4
+        MET >= 20000
+        SAVE
+      'ejets': |
+        IMPORT SUBcommon
+        EL_N 25000 >= 1
+        EL_N tight 25000 == 1
+        MU_N 25000 == 0
+        SAVE
+      'mujets': |
+        IMPORT SUBcommon
+        EL_N 25000 == 0
+        MU_N 25000 == 1
+        SAVE
+
+# After configuring each container, many variables will be saved automatically.
+Output:
+  treeName: 'reco'
+  vars:
+    - 'OutMuons_NOSYS.truthOrigin -> mu_truthOrigin'
+  metVars: []
+  containers:
+      # Format should follow: '<suffix>:<output container>'
+      el_: 'OutElectrons'
+      mu_: 'OutMuons'
+      jet_: 'OutJets'
+      met_: 'AnaMET'
+      '': 'EventInfo'
+  commands:
+    # Turn output branches on and off with 'enable' and 'disable'
+    - disable jet_jvtEfficiency.*

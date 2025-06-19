@@ -1,0 +1,565 @@
+stages:
+  - run
+  - tutorial
+
+variables:
+  RUN_DIR: run
+  RUN_DIR_ABS: ${CI_PROJECT_DIR}/${RUN_DIR}
+
+.prepare_dirs: &prepare_dirs
+  - mkdir ${JOBNAME}
+  - cd ${JOBNAME}
+  - set +e
+
+.restore_environment: &restore_environment
+  - set +e
+  - source ${CI_PROJECT_DIR}/.gitlab/ci_scripts/setupATLAS.sh
+  - echo ${ASETUP_PATH}
+  - cd ${CI_PROJECT_DIR}/${ASETUP_PATH}
+  - asetup --restore
+  - cd ${CI_PROJECT_DIR}
+  - echo ${BUILD_PATH}
+  - cd ${CI_PROJECT_DIR}/${BUILD_PATH}
+  - source */setup.sh
+  - cd ../
+
+.switch_tags: &switch_tags
+  - git config --global --add safe.directory ${CI_PROJECT_DIR}
+  - >
+      if [ -f "${CI_PROJECT_DIR}/${ASETUP_PATH}/tag.txt" ]; then
+        git config user.email "atlas.top.reconstruction@cern.ch"
+        git config user.name "ATLAS Top Reconstruction"
+        git config core.filemode false
+        git fetch --tags
+        git status --porcelain
+        git  --no-pager diff
+        if  [[ ! `git status --porcelain` ]]; then git stash; fi
+        git checkout "tags/$(cat ${CI_PROJECT_DIR}/${ASETUP_PATH}/tag.txt)"
+      else
+        echo "ERROR: ${ASETUP_PATH}/tag.txt does not exist!"
+        exit 1
+      fi
+
+
+
+.run_top_el: &run_top_el
+  - set -e
+  - cd ${CI_PROJECT_DIR}/${JOBNAME}
+  - mkdir ${RUN_DIR}
+  - cd ${RUN_DIR}
+  - |
+    if [[ "${INPUTFILE}" == *"input_data"* ]]; then
+      runTop_el.py -i ${INPUTFILE} -o output_${JOBNAME} --particle --parton 1> log_TopCPToolkit.txt
+    else
+      runTop_el.py -i ${INPUTFILE} -o output_${JOBNAME} --particle --parton -e 100 1> log_TopCPToolkit.txt
+    fi
+  - set +e
+  - cd ../
+
+.run_top_el_yaml: &run_top_el_yaml
+  - set -e
+  - cd ${CI_PROJECT_DIR}/${JOBNAME}
+  - mkdir ${RUN_DIR}
+  - cd ${RUN_DIR}
+  - |
+    if [[ "${INPUTFILE}" == *"input_data"* ]]; then
+      runTop_el.py -i ${INPUTFILE} -o output_${JOBNAME} --particle --parton -t exampleTtbarLjets 1> log_TopCPToolkit.txt
+    else
+      runTop_el.py -i ${INPUTFILE} -o output_${JOBNAME} --particle --parton -e 100 -t exampleTtbarLjets 1> log_TopCPToolkit.txt
+    fi
+  - set +e
+  - cd ../
+
+.run_tutorial_yaml: &run_tutorial_yaml
+  - set -e
+  - cd ${CI_PROJECT_DIR} && source solve_tutorial.sh
+  - cd ${CI_PROJECT_DIR}/${JOBNAME}
+  - mkdir ${RUN_DIR}
+  - cd ${RUN_DIR}
+  - runTop_el.py -i ${INPUTFILE} -o output_${JOBNAME} --particle -e 100 -t tutorial 1> log_TopCPToolkit.txt
+  - set +e
+  - cd ../
+
+.base_job_template:
+  stage: run
+  interruptible: true
+  tags:
+    - cvmfs
+  artifacts:
+    paths:
+      - ${JOBNAME}
+    expire_in: 2h
+    when: always
+
+.latest_aa_job_template:
+  extends: .base_job_template
+  script:
+    - *prepare_dirs
+    - *restore_environment
+    - *run_top_el
+
+.latest_ab_job_template:
+  extends: .base_job_template
+  script:
+    - *prepare_dirs
+    - *restore_environment
+    - *run_top_el
+
+.latest_aa_yaml_template:
+  extends: .base_job_template
+  script:
+    - *prepare_dirs
+    - *restore_environment
+    - *run_top_el_yaml
+
+.latest_ab_yaml_template:
+  extends: .base_job_template
+  script:
+    - *prepare_dirs
+    - *restore_environment
+    - *run_top_el_yaml
+
+.latest_ab_tutorial_template:
+  extends: .base_job_template
+  script:
+    - *prepare_dirs
+    - *restore_environment
+    - *run_tutorial_yaml
+
+.reference_aa_template:
+  extends: .base_job_template
+  script:
+    - *switch_tags
+    - *prepare_dirs
+    - *restore_environment
+    - *run_top_el
+
+.reference_ab_template:
+  extends: .base_job_template
+  script:
+    - *switch_tags
+    - *prepare_dirs
+    - *restore_environment
+    - *run_top_el
+
+latestAAreleaseRun2:
+  extends: .latest_aa_job_template
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "schedule"'
+  variables:
+    JOBNAME: job_latestAAreleaseRun2
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_mc20.txt
+  needs: [latestAArelease]
+  allow_failure: true
+
+latestAAreleaseRun2data:
+  extends: .latest_aa_job_template
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "schedule"'
+  variables:
+    JOBNAME: job_latestAAreleaseRun2data
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_data18.txt
+  needs: [latestAArelease]
+  allow_failure: true
+
+latestAAreleaseRun3:
+  extends: .latest_aa_job_template
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "schedule"'
+  variables:
+    JOBNAME: job_latestAAreleaseRun3
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_mc23.txt
+  needs: [latestAArelease]
+  allow_failure: true
+
+latestAAreleaseRun3data:
+  extends: .latest_aa_job_template
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "schedule"'
+  variables:
+    JOBNAME: job_latestAAreleaseRun3data
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_data22.txt
+  needs: [latestAArelease]
+  allow_failure: true
+
+latestAAnightlyRun2:
+  extends: .latest_aa_job_template
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "schedule"'
+  variables:
+    JOBNAME: job_latestAAnightlyRun2
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_mc20.txt
+  needs: [latestAAnightly]
+  allow_failure: true
+
+latestAAnightlyRun3:
+  extends: .latest_aa_job_template
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "schedule"'
+  variables:
+    JOBNAME: job_latestAAnightlyRun3
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_mc23.txt
+  needs: [latestAAnightly]
+  allow_failure: true
+
+latestAAnightlyRun2data:
+  extends: .latest_aa_job_template
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "schedule"'
+  variables:
+    JOBNAME: job_latestAAnightlyRun2data
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_data18.txt
+  needs: [latestAAnightly]
+  allow_failure: true
+
+latestAAnightlyRun3data:
+  extends: .latest_aa_job_template
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "schedule"'
+  variables:
+    JOBNAME: job_latestAAnightlyRun3data
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_data22.txt
+  needs: [latestAAnightly]
+  allow_failure: true
+
+referenceAARun2:
+  extends: .reference_aa_template
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "schedule"'
+  variables:
+    JOBNAME: job_referenceAARun2
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_mc20.txt
+  needs: [referenceAATopCPToolkitTag]
+  allow_failure: true
+
+referenceAARun3:
+  extends: .reference_aa_template
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "schedule"'
+  variables:
+    JOBNAME: job_referenceAARun3
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_mc23.txt
+  needs: [referenceAATopCPToolkitTag]
+  allow_failure: true
+
+referenceAARun2data:
+  extends: .reference_aa_template
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "schedule"'
+  variables:
+    JOBNAME: job_referenceAARun2data
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_data18.txt
+  needs: [referenceAATopCPToolkitTag]
+  allow_failure: true
+
+referenceAARun3data:
+  extends: .reference_aa_template
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "schedule"'
+  variables:
+    JOBNAME: job_referenceAARun3data
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_data22.txt
+  needs: [referenceAATopCPToolkitTag]
+  allow_failure: true
+
+lastweekAARun2:
+  extends: .reference_aa_template
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+  variables:
+    JOBNAME: job_lastweekAARun2
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_mc20.txt
+  needs: [lastweekAATopCPToolkitTag]
+  allow_failure: true
+
+lastweekAARun3:
+  extends: .reference_aa_template
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+  variables:
+    JOBNAME: job_lastweekAARun3
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_mc23.txt
+  needs: [lastweekAATopCPToolkitTag]
+  allow_failure: true
+
+lastweekAARun2data:
+  extends: .reference_aa_template
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+  variables:
+    JOBNAME: job_lastweekAARun2data
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_data18.txt
+  needs: [lastweekAATopCPToolkitTag]
+  allow_failure: true
+
+lastweekAARun3data:
+  extends: .reference_aa_template
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+  variables:
+    JOBNAME: job_lastweekAARun3data
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_data22.txt
+  needs: [lastweekAATopCPToolkitTag]
+  allow_failure: true
+
+latestAAnightlyRun2YAML:
+  extends: .latest_aa_yaml_template
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "schedule"'
+  variables:
+    JOBNAME: job_latestAAnightlyRun2YAML
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_mc20.txt
+  needs: [latestAAnightly]
+  allow_failure: true
+
+latestAAnightlyRun3YAML:
+  extends: .latest_aa_yaml_template
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "schedule"'
+  variables:
+    JOBNAME: job_latestAAnightlyRun3YAML
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_mc23.txt
+  needs: [latestAAnightly]
+  allow_failure: true
+
+latestAAnightlyRun2YAMLdata:
+  extends: .latest_aa_yaml_template
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "schedule"'
+  variables:
+    JOBNAME: job_latestAAnightlyRun2YAMLdata
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_data18.txt
+  needs: [latestAAnightly]
+  allow_failure: true
+
+latestAAnightlyRun3YAMLdata:
+  extends: .latest_aa_yaml_template
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "schedule"'
+  variables:
+    JOBNAME: job_latestAAnightlyRun3YAMLdata
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_data22.txt
+  needs: [latestAAnightly]
+  allow_failure: true
+
+latestABreleaseRun2:
+  extends: .latest_ab_job_template
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "schedule"'
+  variables:
+    JOBNAME: job_latestABreleaseRun2
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_mc20.txt
+  needs: [latestABrelease]
+  allow_failure: true
+
+latestABreleaseRun2data:
+  extends: .latest_ab_job_template
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "schedule"'
+  variables:
+    JOBNAME: job_latestABreleaseRun2data
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_data18.txt
+  needs: [latestABrelease]
+  allow_failure: true
+
+latestABreleaseRun3:
+  extends: .latest_ab_job_template
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "schedule"'
+  variables:
+    JOBNAME: job_latestABreleaseRun3
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_mc23.txt
+  needs: [latestABrelease]
+  allow_failure: true
+
+latestABreleaseRun3data:
+  extends: .latest_ab_job_template
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "schedule"'
+  variables:
+    JOBNAME: job_latestABreleaseRun3data
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_data22.txt
+  needs: [latestABrelease]
+  allow_failure: true
+
+latestABnightlyRun2:
+  extends: .latest_ab_job_template
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "schedule"'
+  variables:
+    JOBNAME: job_latestABnightlyRun2
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_mc20.txt
+  needs: [latestABnightly]
+  allow_failure: true
+
+latestABnightlyRun3:
+  extends: .latest_ab_job_template
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "schedule"'
+  variables:
+    JOBNAME: job_latestABnightlyRun3
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_mc23.txt
+  needs: [latestABnightly]
+  allow_failure: true
+
+latestABnightlyRun2data:
+  extends: .latest_ab_job_template
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "schedule"'
+  variables:
+    JOBNAME: job_latestABnightlyRun2data
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_data18.txt
+  needs: [latestABnightly]
+  allow_failure: true
+
+latestABnightlyRun3data:
+  extends: .latest_ab_job_template
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "schedule"'
+  variables:
+    JOBNAME: job_latestABnightlyRun3data
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_data22.txt
+  needs: [latestABnightly]
+  allow_failure: true
+
+referenceABRun2:
+  extends: .reference_ab_template
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "schedule"'
+  variables:
+    JOBNAME: job_referenceABRun2
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_mc20.txt
+  needs: [referenceABTopCPToolkitTag]
+  allow_failure: true
+
+referenceABRun3:
+  extends: .reference_ab_template
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "schedule"'
+  variables:
+    JOBNAME: job_referenceABRun3
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_mc23.txt
+  needs: [referenceABTopCPToolkitTag]
+  allow_failure: true
+
+referenceABRun2data:
+  extends: .reference_ab_template
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "schedule"'
+  variables:
+    JOBNAME: job_referenceABRun2data
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_data18.txt
+  needs: [referenceABTopCPToolkitTag]
+  allow_failure: true
+
+referenceABRun3data:
+  extends: .reference_ab_template
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "schedule"'
+  variables:
+    JOBNAME: job_referenceABRun3data
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_data22.txt
+  needs: [referenceABTopCPToolkitTag]
+  allow_failure: true
+
+lastweekABRun2:
+  extends: .reference_ab_template
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+  variables:
+    JOBNAME: job_lastweekABRun2
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_mc20.txt
+  needs: [lastweekABTopCPToolkitTag]
+  allow_failure: true
+
+lastweekABRun3:
+  extends: .reference_ab_template
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+  variables:
+    JOBNAME: job_lastweekABRun3
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_mc23.txt
+  needs: [lastweekABTopCPToolkitTag]
+  allow_failure: true
+
+lastweekABRun2data:
+  extends: .reference_ab_template
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+  variables:
+    JOBNAME: job_lastweekABRun2data
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_data18.txt
+  needs: [lastweekABTopCPToolkitTag]
+  allow_failure: true
+
+lastweekABRun3data:
+  extends: .reference_ab_template
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+  variables:
+    JOBNAME: job_lastweekABRun3data
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_data22.txt
+  needs: [lastweekABTopCPToolkitTag]
+  allow_failure: true
+
+latestABnightlyRun2YAML:
+  extends: .latest_ab_yaml_template
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "schedule"'
+  variables:
+    JOBNAME: job_latestABnightlyRun2YAML
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_mc20.txt
+  needs: [latestABnightly]
+  allow_failure: true
+
+latestABnightlyRun3YAML:
+  extends: .latest_ab_yaml_template
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "schedule"'
+  variables:
+    JOBNAME: job_latestABnightlyRun3YAML
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_mc23.txt
+  needs: [latestABnightly]
+  allow_failure: true
+
+latestABnightlyRun2YAMLdata:
+  extends: .latest_ab_yaml_template
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "schedule"'
+  variables:
+    JOBNAME: job_latestABnightlyRun2YAMLdata
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_data18.txt
+  needs: [latestABnightly]
+  allow_failure: true
+
+latestABnightlyRun3YAMLdata:
+  extends: .latest_ab_yaml_template
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "schedule"'
+  variables:
+    JOBNAME: job_latestABnightlyRun3YAMLdata
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_data22.txt
+  needs: [latestABnightly]
+  allow_failure: true
+
+latestABreleaseRun2tutorial:
+  extends: .latest_ab_tutorial_template
+  stage: tutorial
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "schedule"'
+  variables:
+    JOBNAME: job_latestABreleaseRun2tutorial
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_mc20.txt
+  needs: [latestABrelease4tutorial]
+  allow_failure: true
+
+latestABreleaseRun3tutorial:
+  extends: .latest_ab_tutorial_template
+  stage: tutorial
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "schedule"'
+  variables:
+    JOBNAME: job_latestABreleaseRun3tutorial
+    INPUTFILE:  ${CI_PROJECT_DIR}/.gitlab/ci_scripts/input_mc23.txt
+  needs: [latestABrelease4tutorial]
+  allow_failure: true

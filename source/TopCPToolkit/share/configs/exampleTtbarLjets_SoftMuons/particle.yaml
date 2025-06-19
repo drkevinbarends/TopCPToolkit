@@ -1,0 +1,147 @@
+CommonServices:
+  systematicsHistogram: 'listOfSystematicsParticleLevel'
+  runSystematics: True
+
+GeneratorLevelAnalysis: {}
+
+PL_Electrons:
+  notFromTau: False
+  PtEtaSelection:
+    useDressedProperties: True
+    minPt: 25000.0
+    maxEta: 2.5
+
+PL_Muons:
+  isolated: True
+  selectionName: 'regularMuons'
+  IFFClassification: {}
+  PtEtaSelection:
+    - useDressedProperties: True
+      minPt: 25000.0
+      maxEta: 2.5
+      selectionName: 'regularMuons'
+    - useDressedProperties: True
+      minPt: 4000.0
+      maxEta: 2.5
+      selectionName: 'softMuons'
+
+PL_Jets:
+  - containerName: 'AntiKt4TruthDressedWZJets'
+    PtEtaSelection:
+       minPt: 25000.0
+       maxEta: 2.5
+  - containerName: 'AntiKt10TruthTrimmedPtFrac5SmallR20Jets'
+    PtEtaSelection:
+       minPt: 25000.0
+       maxEta: 2.5
+
+PL_Neutrinos:
+  isolated: False
+  notFromTau: False
+
+PL_Taus:
+  PtEtaSelection:
+    minPt: 25000.0
+    maxEta: 2.5
+
+PL_MissingET: {}
+
+PL_Photons:
+  isolated: False
+  PtEtaSelection:
+    minPt: 25000.0
+    maxEta: 2.5
+
+PL_OverlapRemoval:
+  electrons: TruthElectrons
+  muons: TruthMuons.regularMuons
+  photons: TruthPhotons
+  jets: AntiKt4TruthDressedWZJets
+  useRapidityForDeltaR: True
+
+
+PL_SoftMuons:
+  muons: TruthMuons.softMuons
+  jets: AntiKt4TruthDressedWZJets
+  useRapidityForDeltaR: True
+  useDressedProperties: False
+
+Thinning:
+  - containerName: 'TruthElectrons'
+    outputName: 'OutTruthElectrons'
+  - containerName: 'TruthMuons'
+    selectionName: 'regularMuons'
+    outputName: 'OutTruthMuons'
+  - containerName: 'TruthMuons'
+    selectionName: 'softMuons&&jetAssociated'
+    outputName: 'OutTruthSoftMuons'
+    postfix: 'soft'
+  - containerName: 'TruthNeutrinos'
+    outputName: 'OutTruthNeutrinos'
+  - containerName: 'AntiKt4TruthDressedWZJets'
+    outputName: 'OutTruthJets'
+  - containerName: 'AntiKt10TruthTrimmedPtFrac5SmallR20Jets'
+    outputName: 'OutTruthLargeRJets'
+  - containerName: 'TruthTaus'
+    outputName: 'OutTruthTaus'
+  - containerName: 'TruthPhotons'
+    outputName: 'OutTruthPhotons'
+
+
+EventSelection:
+  - electrons: 'TruthElectrons'
+    muons: 'TruthMuons'
+    jets: 'AntiKt4TruthDressedWZJets'
+    met: 'TruthMET'
+    metTerm: 'NonInt'
+    noFilter: False
+    cutFlowHistograms: True
+    selectionCutsDict:
+      'ejets_SMT': |
+        EL_N 28000 == 1
+        MU_N 25000 == 0
+        #MU_N 4000 >= 1
+        #JET_N_BTAG >= 0
+        JET_N 25000 >= 4
+        #MET > 30000
+        #MWT > 30000
+        EVENTFLAG passPLSoftMuonSelection
+        SAVE
+      'mujets_SMT': |
+        MU_N 28000 == 1
+        EL_N 25000 == 0
+        #MU_N 4000 >= 2
+        #JET_N_BTAG >= 0
+        JET_N 25000 >= 4
+        #MET > 30000
+        #MWT > 30000
+        EVENTFLAG passPLSoftMuonSelection
+        SAVE
+
+# After configuring each container, many variables will be saved automatically.
+Output:
+  treeName: 'particleLevel'
+  vars:
+    - 'EventInfo.mcChannelNumber -> mcChannelNumber'
+    - 'EventInfo.runNumber -> runNumber'
+    - 'EventInfo.eventNumber -> eventNumber'
+  #metVars: []
+  #metTermName: 'NonInt'
+  containers:
+      # Format should follow: '<suffix>:<output container>'
+      'PL_': 'EventInfo'
+      'PL_el_': 'OutTruthElectrons'
+      'PL_mu_': 'OutTruthMuons'
+      'PL_softmu_': 'OutTruthSoftMuons'
+      'PL_nu_': 'OutTruthNeutrinos'
+      'PL_jet_': 'OutTruthJets'
+      'PL_ljet_': 'OutTruthLargeRJets'
+      'PL_tau_': 'OutTruthTaus'
+      'PL_met_': 'TruthMET'
+      'PL_ph_': 'OutTruthPhotons'
+
+AddConfigBlocks:
+    - modulePath: 'TopCPToolkit.ParticleLevelSoftMuonsConfig'
+      functionName: 'ParticleLevelSoftMuonsBlock'
+      algName: 'PL_SoftMuons'
+      pos: 'EventSelection'

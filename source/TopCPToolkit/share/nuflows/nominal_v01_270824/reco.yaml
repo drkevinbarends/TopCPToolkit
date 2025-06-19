@@ -1,0 +1,180 @@
+CommonServices:
+  systematicsHistogram: 'listOfSystematics'
+
+PileupReweighting: {}
+
+EventCleaning:
+    runEventCleaning: True
+
+GeneratorLevelAnalysis: {}
+
+Jets:
+  - containerName: 'AnaJets'
+    jetCollection: 'AntiKt4EMPFlowJets'
+    runJvtUpdate: False
+    runNNJvtUpdate: True
+    systematicsModelJES: 'Category'
+    systematicsModelJER: 'Full'
+    JVT: {}
+    PtEtaSelection:
+        minPt: 25000.0
+        maxEta: 2.5
+    FlavourTagging:
+      - btagger: 'DL1dv01'
+        btagWP: 'Continuous'
+        generator: 'autoconfig'
+    FlavourTaggingEventSF:
+      - containerName: 'AnaJets.baselineJvt'
+        btagger: 'DL1dv01'
+        btagWP: 'Continuous'
+
+
+Electrons:
+  - containerName: 'AnaElectrons'
+    crackVeto: True
+    IFFClassification: {}
+    WorkingPoint:
+      - selectionName: 'tight'
+        identificationWP: 'MediumLH'
+        isolationWP: 'Loose_VarRad'
+        noEffSF: True
+    PtEtaSelection:
+        minPt: 5000.0
+        maxEta: 2.47
+
+Muons:
+  - containerName: 'AnaMuons'
+    IFFClassification: {}
+    WorkingPoint:
+      - selectionName: 'tight'
+        quality: 'Medium'
+        isolation: 'Loose_VarRad'
+    PtEtaSelection:
+        minPt: 5000.0
+        maxEta: 2.5
+
+MissingET:
+  - containerName: 'AnaMET'
+    jets: 'AnaJets'
+    electrons: 'AnaElectrons.tight'
+    muons: 'AnaMuons.tight'
+
+# PerEventSF:
+#   - algoName: 'btagSFCalc_DL1dv01_Continuous'
+#     particles: 'AnaJets.baselineJvt'
+#     objectSF: 'ftag_effSF_DL1dv01_Continuous_%SYS%'
+#     eventSF: 'weight_btagSF_DL1dv01_Continuous_%SYS%'
+
+LeptonSF:
+  # - electrons: 'AnaElectrons.tight'
+  - muons: 'AnaMuons.tight'
+    lepton_postfix: 'tight'
+
+OverlapRemoval:
+  inputLabel: 'preselectOR'
+  outputLabel: 'passesOR'
+  jets: 'AnaJets.baselineJvt'
+  electrons: 'AnaElectrons.tight'
+  muons: 'AnaMuons.tight'
+
+Thinning:
+  - containerName: 'AnaJets'
+    outputName: 'OutJets'
+    selectionName: 'baselineJvt'
+  - containerName: 'AnaElectrons'
+    outputName: 'OutElectrons'
+    selectionName: 'tight'
+  - containerName: 'AnaMuons'
+    outputName: 'OutMuons'
+    selectionName: 'tight'
+
+Trigger:
+    triggerChainsPerYear:
+        '2015':
+            - 'HLT_e24_lhmedium_L1EM20VH || HLT_e60_lhmedium || HLT_e120_lhloose'
+            - 'HLT_mu20_iloose_L1MU15 || HLT_mu50'
+        '2016':
+            - 'HLT_e26_lhtight_nod0_ivarloose || HLT_e60_lhmedium_nod0 || HLT_e140_lhloose_nod0'
+            - 'HLT_mu26_ivarmedium || HLT_mu50'
+        '2017':
+            - 'HLT_e26_lhtight_nod0_ivarloose || HLT_e60_lhmedium_nod0 || HLT_e140_lhloose_nod0'
+            - 'HLT_mu26_ivarmedium || HLT_mu50'
+        '2018':
+            - 'HLT_e26_lhtight_nod0_ivarloose || HLT_e60_lhmedium_nod0 || HLT_e140_lhloose_nod0'
+            - 'HLT_mu26_ivarmedium || HLT_mu50'
+        '2022':
+            - 'HLT_e26_lhtight_ivarloose_L1EM22VHI || HLT_e60_lhmedium_L1EM22VHI || HLT_e140_lhloose_L1EM22VHI'
+            - 'HLT_mu26_ivarmedium_L1MU14FCH || HLT_mu50_L1MU14FCH'
+    noFilter: False
+    electrons: 'AnaElectrons.tight'
+    electronID: 'Tight'
+    electronIsol: 'Tight_VarRad'
+    muons: 'AnaMuons.tight'
+    muonID: 'Medium'
+
+EventSelection:
+  - electrons: 'AnaElectrons.tight'
+    muons: 'AnaMuons.tight'
+    jets: 'AnaJets.baselineJvt'
+    met: 'AnaMET'
+    btagDecoration: 'ftag_select_DL1dv01_FixedCutBEff_85'
+    noFilter: False
+    cutFlowHistograms: True
+    selectionCutsDict:
+      'lljets': |
+        SUM_EL_N_MU_N 5000 == 2
+        SUM_EL_N_MU_N 25000 >= 1
+        JET_N 25000 >= 2
+        SAVE
+
+PartonHistory:
+  - histories: 'Ttbar'
+
+NuFlows:
+  - btagger: 'DL1dv01'
+    onnxfilepath: TopCPToolkit/nuflows/nominal_v01_270824
+    write_inputs: False
+    electrons: 'AnaElectrons.tight'
+    muons: 'AnaMuons.tight'
+    jets: 'AnaJets.baselineJvt'
+    met: 'AnaMET'
+    eventSelection: 'pass_lljets_%SYS%'
+
+Output:
+  treeName: 'reco'
+  vars: []
+    # - 'OutMuons_NOSYS.truthOrigin -> mu_truthOrigin'
+  metVars: []
+  containers:
+      # Format should follow: '<suffix>:<output container>'
+      el_: 'OutElectrons'
+      mu_: 'OutMuons'
+      jet_: 'OutJets'
+      met_: 'AnaMET'
+      '': 'EventInfo'
+      'Ttbar_': 'PartonHistoryTtbar'
+
+  commands:
+    # Turn output branches on and off with 'enable' and 'disable'
+    # - disable trigPassed_HLT.*
+    # - disable Ttbar_MC.*before.*
+    # - disable Ttbar_MC.*after.*
+    # - disable Ttbar_MC.*SC.*
+    # - disable globalTriggerMatch
+    # - disable el_select_tight.*
+    # - disable mu_select_tight.*
+    # - disable el.*effSF.*
+    # - disable mu.*effSF.*
+    - disable jet_.*_eff.*
+    # - disable jet_jvtEfficiency.*
+    # - disable met_sumet.*
+
+AddConfigBlocks:
+  - modulePath: 'TopCPToolkit.TopNuFlowsConfig'
+    functionName: 'TopNuFlowsConfig'
+    algName: 'NuFlows'
+    pos: 'Output'
+  - modulePath: 'TopCPToolkit.truthConfig'
+    functionName: 'truthConfig'
+    algName: 'PartonHistory'
+    pos: 'Output'

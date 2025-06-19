@@ -1,0 +1,87 @@
+CommonServices:
+  systematicsHistogram: 'listOfSystematics'
+
+PileupReweighting: {}
+
+EventCleaning:
+    runEventCleaning: True
+
+Jets:
+  - containerName: 'AnaJets'
+    jetCollection: 'AntiKt4EMPFlowJets'
+    runJvtUpdate: False
+    runNNJvtUpdate: True
+    runGhostMuonAssociation: True
+    systematicsModelJES: 'Category'
+    systematicsModelJER: 'Full'
+    JVT: {}
+    PtEtaSelection:
+        minPt: 25000.0
+        maxEta: 2.5
+    FlavourTagging:
+      - btagger: 'GN2v01'
+        btagWP: 'FixedCutBEff_90'
+      - btagger: 'GN2v01'
+        btagWP: 'FixedCutBEff_85'
+      - btagger: 'GN2v01'
+        btagWP: 'FixedCutBEff_77'
+      - btagger: 'GN2v01'
+        btagWP: 'FixedCutBEff_70'
+      - btagger: 'GN2v01'
+        btagWP: 'FixedCutBEff_65'
+      - btagger: 'GN2v01'
+        btagWP: 'Continuous'
+    FlavourTaggingEventSF:
+      - containerName: 'AnaJets.baselineJvt'
+        btagger: 'GN2v01'
+        btagWP: 'Continuous'
+
+GeneratorLevelAnalysis: {}
+
+ObjectCutFlow:
+  - containerName: 'AnaJets'
+    selectionName: 'baselineJvt'
+
+Thinning:
+  - containerName: 'AnaJets'
+    outputName: 'OutJets'
+    selectionName: 'baselineJvt'
+
+EventSelection:
+  - jets: 'AnaJets.baselineJvt'
+    btagDecoration: 'ftag_select_GN2v01_FixedCutBEff_85'
+    noFilter: False
+    cutFlowHistograms: True
+    selectionCutsDict:
+      'SUBcommon': |
+        JET_N 5000 >= 1
+        SAVE
+      'dijet': |
+        JET_N 5000 >= 2
+        SAVE
+
+# The JETM twiki which documents this recommends using AntiKt4TruthJets
+# as the truthHSCollection but DAOD_PHYS seems to be missing this.
+# An alternative is to use AntiKt4TruthDressedWZJets or AntiKt4TruthWZJets.
+HSTPFilter:
+  - truthHSCollection: "AntiKt4TruthDressedWZJets"
+    truthPUCollection: "InTimeAntiKt4TruthJets"
+
+# After configuring each container, many variables will be saved automatically.
+Output:
+  treeName: 'reco'
+  vars: []
+  metVars: []
+  containers:
+      # Format should follow: '<suffix>:<output container>'
+      jet_: 'OutJets'
+      '': 'EventInfo'
+  commands:
+      # Turn output branches on and off with 'enable' and 'disable'
+      - disable jet_jvtEfficiency.*
+
+AddConfigBlocks:
+  - modulePath: 'TopCPToolkit.HSTPFilterConfig'
+    functionName: 'HSTPFilterConfig'
+    algName: 'HSTPFilter'
+    pos: 'Jets'
